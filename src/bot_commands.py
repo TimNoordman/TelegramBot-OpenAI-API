@@ -1,5 +1,7 @@
 # bot_commands.py
-# for telegram
+# Stone Member B.V. — Telegram Bot Commands
+# Based on FlyingFathead/TelegramBot-OpenAI-API
+
 from telegram import Update, Bot
 from telegram.ext import Application, MessageHandler, filters, CommandHandler, CallbackContext
 from telegram.constants import ParseMode
@@ -47,7 +49,6 @@ async def restart_command(update: Update, context: CallbackContext, bot_owner_id
         return
 
     if str(update.message.from_user.id) == bot_owner_id:
-        # WIP: Implement restart logic here
         await update.message.reply_text("Restarting the bot...")
     else:
         await update.message.reply_text("You are not authorized to use this command.")
@@ -61,17 +62,9 @@ async def reset_daily_tokens_command(update: Update, context: CallbackContext, b
         return
 
     try:
-        
-        # (old fallback method, JIC)
-        # Reset the in-memory token usage counter
-        # bot_instance.total_token_usage = 0
-        # logging.info("In-memory token usage counter reset.")
-
-        # Pass the reset_total_token_usage method as a callback to reset_token_usage_at_midnight
         reset_token_usage_at_midnight(bot_instance.token_usage_file, bot_instance.reset_total_token_usage)
         logging.info(f"User {user_id} has reset the daily token usage, including the in-memory token usage counter.")
         await update.message.reply_text("Daily token usage has been reset, including the in-memory token usage counter.")
-        
     except Exception as e:
         logging.error(f"Failed to reset daily token usage: {e}")
         await update.message.reply_text("Failed to reset daily token usage.")
@@ -87,7 +80,7 @@ async def reset_system_message_command(update: Update, context: CallbackContext,
     old_system_message = bot_instance.system_instructions
     bot_instance.system_instructions = bot_instance.config.get('SystemInstructions', 'You are an OpenAI API-based chatbot on Telegram.')
     logging.info(f"User {user_id} reset the system message to default.")
-    await update.message.reply_text(f"System message reset to default.\n\nOld Message:\n<code>{old_system_message}</code>\n----------------------\nNew Default Message:\n<code>{bot_instance.system_instructions}</code>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"System message reset to default.\n\nOld Message:\n<code>{old_system_message[:200]}...</code>\n----------------------\nNew Default Message:\n<code>{bot_instance.system_instructions[:200]}...</code>", parse_mode=ParseMode.HTML)
 
 # /setsystemmessage (admin command)
 async def set_system_message_command(update: Update, context: CallbackContext, bot_instance):
@@ -102,16 +95,15 @@ async def set_system_message_command(update: Update, context: CallbackContext, b
         old_system_message = bot_instance.system_instructions
         bot_instance.system_instructions = new_system_message
         logging.info(f"User {user_id} updated the system message to: {new_system_message}")
-        await update.message.reply_text(f"System message updated.\n\nOld Message: <code>{old_system_message}</code>\nNew Message: <code>{new_system_message}</code>", parse_mode=ParseMode.HTML)
+        await update.message.reply_text(f"System message updated.\n\nOld Message: <code>{old_system_message[:200]}...</code>\nNew Message: <code>{new_system_message[:200]}...</code>", parse_mode=ParseMode.HTML)
     else:
         logging.info(f"User {user_id} attempted to set system message but provided no new message.")
         await update.message.reply_text("Please provide the new system message in the command line, i.e.: /setsystemmessage My new system message to the AI on what it is, where it is, etc.")
 
 
 # /usage (admin command)
-# bot_commands.py
 async def usage_command(update: Update, context: CallbackContext):
-    bot_instance = context.bot_data.get('bot_instance')  # Retrieve the bot instance from context
+    bot_instance = context.bot_data.get('bot_instance')
     
     if not bot_instance:
         await update.message.reply_text("Internal error: Bot instance not found.")
@@ -130,8 +122,6 @@ async def usage_command(update: Update, context: CallbackContext):
         logging.info(f"User {update.message.from_user.id} does not have permission to use /usage")
         return
 
-    # Correct path to token_usage.json inside logs/ directory
-    # token_usage_file = os.path.join(bot_instance.data_directory, 'logs', 'token_usage.json')
     token_usage_file = os.path.join(bot_instance.logs_directory, 'token_usage.json')
 
     logging.info(f"Looking for token usage file at: {token_usage_file}")
@@ -143,7 +133,6 @@ async def usage_command(update: Update, context: CallbackContext):
                 token_usage_history = json.load(file)
             logging.info("Loaded token usage history successfully")
             
-            # Prune token usage history
             cutoff_date = current_date - datetime.timedelta(days=bot_instance.max_history_days)
             token_usage_history = {
                 date: usage for date, usage in token_usage_history.items()
@@ -177,7 +166,7 @@ async def usage_command(update: Update, context: CallbackContext):
 
 # /usagechart (admin command)
 async def usage_chart_command(update: Update, context: CallbackContext):
-    bot_instance = context.bot_data.get('bot_instance')  # Retrieve the bot instance from context
+    bot_instance = context.bot_data.get('bot_instance')
     
     if not bot_instance:
         await update.message.reply_text("Internal error: Bot instance not found.")
@@ -196,14 +185,12 @@ async def usage_chart_command(update: Update, context: CallbackContext):
         logging.info(f"User {update.message.from_user.id} does not have permission to use /usagechart")
         return
 
-    # Define paths
     token_usage_file = os.path.join(bot_instance.logs_directory, 'token_usage.json')
     output_image_file = os.path.join(bot_instance.data_directory, 'token_usage_chart.png')
 
     logging.info(f"Looking for token usage file at: {token_usage_file}")
     logging.info(f"Output image file will be at: {output_image_file}")
 
-    # Ensure the data directory exists
     try:
         if not os.path.exists(bot_instance.data_directory):
             os.makedirs(bot_instance.data_directory, exist_ok=True)
@@ -213,7 +200,6 @@ async def usage_chart_command(update: Update, context: CallbackContext):
         await update.message.reply_text(f"Failed to create the data directory for the chart. Please check the bot's permissions.")
         return
 
-    # Generate the usage chart
     try:
         generate_usage_chart(token_usage_file, output_image_file)
         bot_instance.logger.info(f"Generated usage chart at {output_image_file}")
@@ -222,7 +208,6 @@ async def usage_chart_command(update: Update, context: CallbackContext):
         await update.message.reply_text("Failed to generate usage chart.")
         return
 
-    # Try to open and send the generated chart image
     try:
         with open(output_image_file, 'rb') as file:
             await context.bot.send_photo(chat_id=update.message.chat_id, photo=file)
@@ -236,30 +221,27 @@ async def usage_chart_command(update: Update, context: CallbackContext):
 
 # /reset
 async def reset_command(update: Update, context: CallbackContext, bot_owner_id, reset_enabled, admin_only_reset):
-    # Check if the /reset command is enabled
     if not reset_enabled:
         logging.info(f"User tried to use the /reset command, but it was disabled.")
         await update.message.reply_text("The /reset command is disabled.")
         return
 
-    # Check if the command is admin-only and if the user is the admin
     if admin_only_reset and str(update.message.from_user.id) != bot_owner_id:
         logging.info(f"User tried to use the /reset command, but was not authorized to do so.")
         await update.message.reply_text("You are not authorized to use this command.")
         return
 
-    # If the user is authorized, or if the command is not admin-only
     if 'chat_history' in context.chat_data:
         context.chat_data['chat_history'] = []
         logging.info(f"Memory context was reset successfully with: /reset")
-        await update.message.reply_text("Memory context reset successfully.")
+        await update.message.reply_text("🔄 Gesprek gereset! Stel gerust een nieuwe vraag.\n🔄 Conversation reset! Feel free to ask a new question.")
     else:
         logging.info(f"No memory context to reset with: /reset")
-        await update.message.reply_text("No memory context to reset.")
+        await update.message.reply_text("Geen gespreksgeschiedenis om te resetten.\nNo conversation history to reset.")
 
 # /viewconfig (admin command)
 async def view_config_command(update: Update, context: CallbackContext, bot_owner_id):
-    user_id = update.message.from_user.id  # Retrieve the user_id
+    user_id = update.message.from_user.id
 
     if bot_owner_id == '0':
         logging.info(f"User {user_id} attempted to view the config with: /viewconfig -- command disabled")
@@ -273,7 +255,6 @@ async def view_config_command(update: Update, context: CallbackContext, bot_owne
                 for line in file:
                     if not line.strip() or line.strip().startswith('#'):
                         continue
-                    # Escape HTML special characters
                     line = line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
                     config_contents += line
             config_contents += "</pre>"
@@ -290,9 +271,9 @@ async def view_config_command(update: Update, context: CallbackContext, bot_owne
         logging.info(f"[ATTENTION] User {user_id} attempted to view the config with: /viewconfig -- access denied")
         await update.message.reply_text("You are not authorized to use this command.")
 
-# ~~~~~~~~~~~~~
-# user commands
-# ~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Stone Member B.V. — Custom user commands
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # /start
 async def start(update: Update, context: CallbackContext, start_command_response):
@@ -300,30 +281,115 @@ async def start(update: Update, context: CallbackContext, start_command_response
 
 # /about
 async def about_command(update: Update, context: CallbackContext, version_number):
-    about_text = f"""
-    🤖 TelegramBot-OpenAI-API ⚡️ Powered by ChatKeke 🚀
-    This is an OpenAI-powered Telegram chatbot created by FlyingFathead.
-    Version: v{version_number}
-    For more information, visit: https://github.com/FlyingFathead/TelegramBot-OpenAI-API
-    (The original author is NOT responsible for any chatbots created using the code)
-    """
-    await update.message.reply_text(about_text)
+    about_text = (
+        "🏗️ <b>Stone Member B.V.</b> — BOUW &amp; ONTWIKKELING\n\n"
+        "Deze bot is de AI-assistent van Stone Member B.V., "
+        "een professioneel bouwbedrijf gevestigd in Almere, Nederland.\n\n"
+        "Gespecialiseerd in nieuwbouw, renovatie, en technische diensten "
+        "voor commerciële, industriële en residentiële projecten.\n\n"
+        f"Bot versie: v{version_number}\n"
+        "🌐 www.stonemember.nl"
+    )
+    await update.message.reply_text(about_text, parse_mode=ParseMode.HTML)
 
 # /help
 async def help_command(update: Update, context: CallbackContext, reset_enabled, admin_only_reset):
-    help_text = """
-    Welcome to this OpenAI API-powered chatbot! Here are some commands you can use:
-
-    - /start: Start a conversation with the bot.
-    - /help: Display this help message.
-    - /about: Learn more about this bot.
-    """
+    help_text = (
+        "📋 <b>Commando's / Commands</b>\n\n"
+        "<b>Stone Member:</b>\n"
+        "/start — Nieuw gesprek / New conversation\n"
+        "/diensten — Onze diensten / Our services\n"
+        "/contact — Contactgegevens / Contact details\n"
+        "/offerte — Offerte aanvragen / Request quote\n"
+        "/tekeningen — Technische tekeningen / Technical drawings\n"
+        "/about — Over deze bot / About this bot\n"
+    )
 
     if reset_enabled:
-        help_text += "- /reset: Reset the bot's context memory.\n"
+        help_text += "/reset — Gesprek resetten / Reset conversation\n"
         if admin_only_reset:
-            help_text += "  (Available to admin only)\n"
+            help_text += "  <i>(Alleen admin / Admin only)</i>\n"
 
-    help_text += "- /admin: (For bot owner only) Display admin commands.\n\nJust type your message to chat with the bot!"
+    help_text += (
+        "\n<b>Extra tools:</b>\n"
+        "De bot kan ook helpen met weer, berekeningen, routebeschrijvingen en meer. "
+        "Stel gewoon uw vraag! 💬\n\n"
+        "/help — Dit helpbericht / This help message"
+    )
 
-    await update.message.reply_text(help_text)
+    await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
+
+# /diensten — Overview of Stone Member services
+async def diensten_command(update: Update, context: CallbackContext):
+    text = (
+        "🏗️ <b>Diensten Stone Member B.V.</b>\n\n"
+        "<b>Nieuwbouw</b>\n"
+        "Commerciële/industriële gebouwen, padelhallen, sportfaciliteiten, bedrijfspanden\n\n"
+        "<b>Renovatie</b>\n"
+        "Appartementen, woningen, verbouwingen en uitbreidingen\n\n"
+        "<b>Ruwbouw</b>\n"
+        "Betonwerk, metselwerk, prefab beton, staalconstructie, ruwbouwtimmerwerk\n\n"
+        "<b>Fundering &amp; Grondwerk</b>\n"
+        "Peil/uitzetten, grondwerk, buitenriolering, terrein inrichting\n\n"
+        "<b>Gevels &amp; Dak</b>\n"
+        "Kozijnen, sandwichpanelen, dakbedekkingen, trappen en balustrades\n\n"
+        "<b>Afbouw</b>\n"
+        "Stukadoorswerk, tegelwerk, dekvloeren, schilderwerk, afbouwtimmerwerk\n\n"
+        "<b>Installaties</b>\n"
+        "Vloerverwarming, sanitair, ventilatie, elektra\n\n"
+        "<b>Technisch</b>\n"
+        "2D detailtekeningen, werktekeningen, kostenramingen, offertes\n\n"
+        "Stel gerust een vraag voor meer details! 💬"
+    )
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+# /contact — Stone Member contact details
+async def contact_command(update: Update, context: CallbackContext):
+    text = (
+        "📞 <b>Contact Stone Member B.V.</b>\n\n"
+        "👤 <b>Tim Noordman</b>\n"
+        "📍 Grote Markt 38, 1315 JG Almere\n"
+        "📱 +31 (0) 6 101 354 59\n"
+        "📧 info@stonemember.nl\n"
+        "📧 tim@stonemember.nl\n"
+        "🌐 www.stonemember.nl\n\n"
+        "🏢 KvK: 086739395"
+    )
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+# /offerte — Quote request information
+async def offerte_command(update: Update, context: CallbackContext):
+    text = (
+        "📋 <b>Offerte aanvragen bij Stone Member</b>\n\n"
+        "Wilt u een offerte ontvangen? Dit hebben wij nodig:\n\n"
+        "1️⃣ <b>Tekeningen</b> — Bouwtekeningen of schetsen van uw project\n"
+        "2️⃣ <b>Specificaties</b> — Gewenste materialen, afmetingen, eisen\n"
+        "3️⃣ <b>Locatie</b> — Waar wordt het project gerealiseerd?\n"
+        "4️⃣ <b>Planning</b> — Gewenste start- en opleverdatum\n\n"
+        "<b>Goed om te weten:</b>\n"
+        "• Offertes zijn <b>4 maanden geldig</b>\n"
+        "• Prijzen zijn <b>excl. 21% BTW</b>\n"
+        "• Meerwerk alleen na <b>schriftelijke bevestiging</b>\n"
+        "• Stelposten: max <b>10% afwijking</b>\n"
+        "• Inclusief hijs-, hef-, klim- en graafmaterieel\n\n"
+        "📧 Stuur uw aanvraag naar: <b>info@stonemember.nl</b>\n"
+        "📞 Of bel: <b>+31 (0) 6 101 354 59</b>"
+    )
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+# /tekeningen — Technical drawings information
+async def tekeningen_command(update: Update, context: CallbackContext):
+    text = (
+        "📐 <b>2D Technische Detailtekeningen</b>\n\n"
+        "Stone Member maakt professionele 2D technische detailtekeningen:\n\n"
+        "• <b>Constructietekeningen</b> — Beton- en staaldetails\n"
+        "• <b>Aansluitdetails</b> — Hoe bouwdelen op elkaar aansluiten\n"
+        "• <b>Funderingsdetails</b> — Doorsneden van funderingen\n"
+        "• <b>Geveldetails</b> — Kozijnaansluitingen, sandwichpanelen\n"
+        "• <b>Dakdetails</b> — Dakopbouw, dakranden, hemelwaterafvoer\n"
+        "• <b>Installatietekeningen</b> — Leidingdoorvoeren, sparingen\n\n"
+        "Alle tekeningen conform Nederlandse bouwstandaarden.\n"
+        "Deze tekeningen vormen de basis voor kostenramingen en offertes.\n\n"
+        "Meer weten? Stel een vraag of neem contact op! 💬"
+    )
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)

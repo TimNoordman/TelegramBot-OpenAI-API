@@ -518,6 +518,12 @@ class TelegramBot:
             )
         )
 
+        # Stone Member B.V. — Custom commands
+        application.add_handler(CommandHandler("diensten", bot_commands.diensten_command))
+        application.add_handler(CommandHandler("contact", bot_commands.contact_command))
+        application.add_handler(CommandHandler("offerte", bot_commands.offerte_command))
+        application.add_handler(CommandHandler("tekeningen", bot_commands.tekeningen_command))
+
         application.add_error_handler(self.error)
 
         # Start daily token usage reset in a background thread
