@@ -290,13 +290,15 @@ async def start(update: Update, context: CallbackContext, start_command_response
 # /about
 async def about_command(update: Update, context: CallbackContext, version_number):
     about_text = (
-        "🏗️ <b>Stone Member B.V.</b> — BOUW &amp; ONTWIKKELING\n\n"
-        "Deze bot is de AI-assistent van Stone Member B.V., "
+        "\ud83c\udfd7\ufe0f <b>Stone Member B.V.</b> \u2014 BOUW &amp; ONTWIKKELING\n\n"
+        "De digitale assistent van Stone Member B.V., "
         "een professioneel bouwbedrijf gevestigd in Almere, Nederland.\n\n"
         "Gespecialiseerd in nieuwbouw, renovatie, en technische diensten "
-        "voor commerciële, industriële en residentiële projecten.\n\n"
-        f"Bot versie: v{version_number}\n"
-        "🌐 www.stonemember.nl"
+        "voor commerci\u00eble, industri\u00eble en residenti\u00eble projecten.\n\n"
+        "\ud83d\udccd Grote Markt 38, 1315 JG Almere\n"
+        "\ud83d\udcde +31 (0) 6 101 354 59\n"
+        "\ud83d\udce7 info@stonemember.nl\n"
+        "\ud83c\udf10 www.stonemember.nl"
     )
     await update.message.reply_text(about_text, parse_mode=ParseMode.HTML)
 
