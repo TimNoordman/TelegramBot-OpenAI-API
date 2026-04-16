@@ -2,7 +2,7 @@
 # Stone Member B.V. — Telegram Bot Commands
 # Based on FlyingFathead/TelegramBot-OpenAI-API
 
-from telegram import Update, Bot
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, MessageHandler, filters, CommandHandler, CallbackContext
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
@@ -277,7 +277,15 @@ async def view_config_command(update: Update, context: CallbackContext, bot_owne
 
 # /start
 async def start(update: Update, context: CallbackContext, start_command_response):
-    await update.message.reply_text(start_command_response)
+    keyboard = [
+        [
+            InlineKeyboardButton("🌐 Website", url="https://www.stonemember.nl"),
+            InlineKeyboardButton("💬 WhatsApp", url="https://wa.me/31610135459"),
+            InlineKeyboardButton("☎️ Bel ons", url="tel:+31610135459"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(start_command_response, reply_markup=reply_markup)
 
 # /about
 async def about_command(update: Update, context: CallbackContext, version_number):
